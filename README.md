@@ -51,6 +51,7 @@ flowchart TD
 | Incremental models with late-arriving-data handling | `fct_orders.sql` (3-day lookback, `on_schema_change='fail'`) |
 | Data quality as code — 150 automated dbt tests, not just row counts | `models/schema.yml`, `macros/test_*.sql` |
 | CI on every push: lint, a full dbt build against a synthetic sample, pytest, and dependency/secret scanning | `.github/workflows/ci.yml` |
+| Container image published to GHCR on every change to the Airflow image | `.github/workflows/docker-publish.yml` |
 | Security practiced, not just documented: hash-pinned deps, SHA-pinned Actions, pre-commit secret scanning, non-destructive backups | `SECURITY.md`, `.pre-commit-config.yaml`, `scripts/backup.sh` / `restore.sh` |
 | Orchestration with real failure handling | `airflow/dags/dbt_cosmos_dag.py` (retries, Slack alerts, graceful DAG-parse degradation) |
 
@@ -111,6 +112,9 @@ bash ../scripts/bootstrap_env.sh   # generates .env with a fresh Fernet key + tw
 docker compose up -d
 # UI: http://localhost:8080  (admin / <the generated AIRFLOW_ADMIN_PASSWORD>)
 ```
+
+The Airflow image is also published to GHCR on every push to `main` that touches `airflow/`
+(`.github/workflows/docker-publish.yml`): `ghcr.io/ashok007-cmd/cloud-native-analytics-engineering-pipeline:latest`.
 
 ## dbt Layer Structure
 
