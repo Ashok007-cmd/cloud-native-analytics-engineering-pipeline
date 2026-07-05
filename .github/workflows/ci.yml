@@ -72,9 +72,7 @@ jobs:
       - name: pip-audit (dev/CI dependency set)
         run: pip-audit -r requirements-dev.txt
       - name: detect-secrets
-        run: |
-          detect-secrets-hook --baseline .secrets.baseline $(find . \
-            \( -path ./dbt_project/dbt_packages -o -path ./dbt_project/target \
-               -o -path ./dbt_project/logs -o -path ./airflow/logs -o -path ./.git \
-               -o -name .venv -o -name venv -o -name __pycache__ -o -name node_modules \
-               -o -name '*.duckdb' -o -name '*.csv' \) -prune -o -type f -print)
+        # `git ls-files` paths match .secrets.baseline's key format exactly (no leading
+        # './'); a naive `find . ... -print` does NOT and silently fails to match
+        # baseline-audited false positives, causing them to be reported as new secrets.
+        run: detect-secrets-hook --baseline .secrets.baseline $(git ls-files)

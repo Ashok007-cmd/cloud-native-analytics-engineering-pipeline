@@ -91,7 +91,11 @@ security:
 	@echo "--- Running pip-audit ---"
 	pip-audit -r requirements-dev.txt || echo "::warning::Vulnerabilities found — review pip-audit output above"
 	@echo "--- Running detect-secrets ---"
-	detect-secrets-hook --baseline .secrets.baseline $$(find . \( -path ./dbt_project/dbt_packages -o -path ./dbt_project/target -o -path ./dbt_project/logs -o -path ./airflow/logs -o -path ./.git -o -name .venv -o -name venv -o -name __pycache__ -o -name node_modules -o -name '*.duckdb' -o -name '*.csv' \) -prune -o -type f -print) && echo "No new secrets found"
+	# Prefer `git ls-files` (respects .gitignore, and its paths match .secrets.baseline's
+	# format exactly). Falls back to `find` (note: -printf '%P' not -print, so paths don't
+	# get a leading './' that would fail to match baseline entries keyed without it) when
+	# not in a git repo.
+	detect-secrets-hook --baseline .secrets.baseline $$(git ls-files 2>/dev/null || find . \( -path ./dbt_project/dbt_packages -o -path ./dbt_project/target -o -path ./dbt_project/logs -o -path ./airflow/logs -o -path ./.git -o -name .venv -o -name venv -o -name __pycache__ -o -name node_modules -o -name '*.duckdb' -o -name '*.csv' \) -prune -o -type f -printf '%P\n') && echo "No new secrets found"
 
 backup:
 	bash scripts/backup.sh
