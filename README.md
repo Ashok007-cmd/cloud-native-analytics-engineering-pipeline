@@ -1,5 +1,6 @@
 # Cloud-Native Analytics Engineering Pipeline
 
+[![CI](https://github.com/Ashok007-cmd/cloud-native-analytics-engineering-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Ashok007-cmd/cloud-native-analytics-engineering-pipeline/actions/workflows/ci.yml)
 [![dbt 1.11](https://img.shields.io/badge/dbt-1.11-orange.svg)](https://www.getdbt.com/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
