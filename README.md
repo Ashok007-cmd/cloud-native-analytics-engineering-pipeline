@@ -10,8 +10,8 @@ unchanged against a local DuckDB file for development and against Snowflake for 
 
 Everything claimed below was independently verified by actually running the tools (`dbt build`,
 `pytest`, `ruff`, `sqlfluff`, `pip-audit`) — not by reading this project's own prior reports, two
-of which turned out to describe git/GitHub activity that had never happened. See
-`IMPROVEMENT_PLAN.md` for the full audit trail if you want the details.
+of which turned out to describe git/GitHub activity that had never happened (see Engineering Notes
+below).
 
 ---
 
@@ -150,12 +150,12 @@ docker compose up -d
 - `airflow/.env` and `airflow/airflow.cfg` (auto-generated, contain a live encryption key) are `.gitignore`d and must never be committed
 - The Airflow webserver binds to `127.0.0.1` only (localhost); the admin UI password has no default fallback — `docker compose up` fails hard if it isn't set
 - `make security` (`pip-audit` + `detect-secrets`) runs locally via pre-commit and in CI on every push
-- Dev/CI Python dependencies (`requirements-dev.txt`, `dbt_project/requirements-snowflake.txt`) are clean per `pip-audit`. The Airflow dependency set (`airflow/requirements.txt`) has known CVEs in `apache-airflow` and a few of its providers — most require an Airflow 3.x major-version migration (breaking DAG-authoring changes), tracked as a deliberate, scoped follow-up rather than a silent bump; see `IMPROVEMENT_PLAN.md` for the current count and upgrade path
+- Dev/CI Python dependencies (`requirements-dev.txt`, `dbt_project/requirements-snowflake.txt`) are clean per `pip-audit`. The Airflow dependency set (`airflow/requirements.txt`) has 20 known CVEs remaining in `apache-airflow` 2.11.2 and a few of its providers (down from 33 on 2.10.5) — the rest require an Airflow 3.x major-version migration (breaking DAG-authoring changes), tracked as a deliberate, scoped follow-up rather than a silent bump
 - GitHub Actions in `.github/workflows/ci.yml` are pinned to commit SHAs (not floating version tags), fetched live from the GitHub API when added
 
 ## Engineering Notes
 
-This project accumulated several self-review report files (`ANALYSIS_REPORT.md`, `RESEARCH_REPORT.md`, `REVIEW.md`, `FINAL_SECURITY_AND_IMPROVEMENT_REPORT.md`) from earlier working sessions; two others (`AUDIT_REPORT.md`, `CLEANUP_REPORT.md`) were deleted for fabricating a git/GitHub Actions/Pages history that never existed — this repository's actual git history starts with its real first commit. Treat the remaining files' *operational* claims with the same skepticism until independently checked; their in-repo *technical* findings (SCD2 join logic, incremental dedup behavior, dependency findings) were spot-checked and are largely genuine. `IMPROVEMENT_PLAN.md` is the current, fully re-verified source of truth for this project's state.
+This project went through several rounds of self-review during development. A few of the resulting report files (`AUDIT_REPORT.md`, `CLEANUP_REPORT.md`, `FINAL_SECURITY_AND_IMPROVEMENT_REPORT.md`, `IMPROVEMENT_PLAN.md`) fabricated or referenced a git/GitHub Actions/Pages history that never existed at the time, and have since been removed — this repository's actual git history starts with its real first commit. The remaining files (`ANALYSIS_REPORT.md`, `RESEARCH_REPORT.md`, `REVIEW.md`) still contain useful in-repo technical findings (SCD2 join logic, incremental dedup behavior) that were spot-checked and look genuine, but treat any operational claim in them (CI runs, deployments) with skepticism unless independently verified against the actual code and this repo's real commit history.
 
 ## License
 
