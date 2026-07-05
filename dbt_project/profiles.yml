@@ -1,0 +1,39 @@
+snowflake:
+  outputs:
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'DBT_ROLE') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'ONLINE_RETAIL_DB') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'ELT_WH') }}"
+      schema: analytics
+      # Default 4 threads to avoid saturating an X-Small warehouse's 8
+      # concurrent-query limit (a dbt build also runs tests concurrently).
+      # CD pipeline sets DBT_THREADS=8 for full production builds.
+      threads: "{{ env_var('DBT_THREADS', '4') | int }}"
+      client_session_keep_alive: true
+      # Warehouse, resource monitor, role, and clustering setup: see
+      # scripts/snowflake_bootstrap.sql (one-time manual setup) and
+      # docs/PRODUCTION_SETUP.md for the full runbook.
+      # Partition / clustering strategy:
+      #   - fct_orders: CLUSTER BY (date_key, customer_key), see
+      #     dbt_project/models/marts/fct_orders.sql config — weekly
+      #     reclustering backstop via the recluster_fct_orders Snowflake TASK
+      #   - dim_dates: no clustering needed (~730 rows)
+      #   - dim_customers / dim_products: CLUSTER BY (customer_id / stock_code) if >5M rows
+      #     (current dataset ~1M rows — premature at this scale; revisit if
+      #     row counts grow, see Phase 10 CST-01)
+      # Recommended Snowflake session params:
+      #   ALTER SESSION SET USE_CACHED_RESULT = FALSE;  -- for benchmark runs
+  target: prod
+
+duckdb:
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', 'dev.duckdb') }}"
+      schema: analytics
+      threads: 4
+  target: dev

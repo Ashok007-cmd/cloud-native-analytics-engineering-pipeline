@@ -1,0 +1,13 @@
+# requirements-dev.in — Loose dependency specs (source of truth)
+# Compile to requirements-dev.txt for CI/CD:
+#   pip-compile --generate-hashes requirements-dev.in > requirements-dev.txt
+sqlfluff>=3.0.0
+sqlfluff-templater-dbt>=3.0.0
+pre-commit==3.7.0
+ruff==0.3.5
+pytest==9.0.3
+pytest-cov>=5.0.0
+dbt-duckdb>=1.7.0,<1.12.0
+mypy>=1.8.0
+pip-audit>=2.7.0
+detect-secrets==1.5.0

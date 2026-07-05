@@ -1,0 +1,52 @@
+name: online_retail_pipeline
+# Default profile is 'duckdb' (local dev / CI target: dev, path via DUCKDB_PATH).
+# Production runs on Snowflake using the separate 'snowflake' profile — always
+# pass `--profile snowflake --target prod` explicitly for Snowflake runs (see
+# .github/workflows/cd.yml). Running `dbt build` locally without
+# --profile snowflake silently uses DuckDB, which is usually what you want for
+# fast local iteration but can be confusing if you intended to test against
+# Snowflake-only SQL.
+profile: duckdb
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+docs-paths: ["docs"]
+
+clean-targets:
+  - target
+  - dbt_packages
+  - dev.duckdb
+  - dev.duckdb.wal
+  - ci.duckdb
+  - ci.duckdb.wal
+
+query-comment:
+  comment: "dbt | target={{ target.name }} | adapter={{ target.type }}"
+  job-label: true
+
+models:
+  online_retail_pipeline:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+
+
+vars:
+  surrogate_key_treat_nulls_as: ''
+  # RFM segmentation thresholds — drive customer_segment in int_customer_metrics.
+  # Calibrated from the Online Retail II dataset (2009-2011). See
+  # int_customer_metrics.sql for the exact CASE logic:
+  #   - high_value:   >= rfm_high_value_min_orders orders AND
+  #                   >= rfm_high_value_min_revenue gross revenue
+  #   - medium_value: >= rfm_medium_value_min_orders orders (and not high_value)
+  #   - low_value:    everything else
+  # Override per environment: `dbt build --vars '{rfm_high_value_min_orders: 5}'`
+  rfm_high_value_min_orders: 10
+  rfm_high_value_min_revenue: 1000
+  rfm_medium_value_min_orders: 3

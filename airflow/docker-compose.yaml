@@ -1,0 +1,86 @@
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: local-airflow-cosmos:2.11.2
+  env_file: .env
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+    - ../dbt_project:/opt/airflow/dbt_project
+  depends_on:
+    postgres:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 5
+  mem_limit: 1g
+  mem_reservation: 512m
+  cpus: "1.0"
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: ${AIRFLOW_PG_PASSWORD}
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+    mem_limit: 512m
+    mem_reservation: 256m
+    cpus: "0.5"
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    restart: "no"
+    healthcheck:
+      disable: true
+    command:
+      - -c
+      - |
+        set -euo pipefail
+        : "${AIRFLOW_ADMIN_PASSWORD:?AIRFLOW_ADMIN_PASSWORD must be set in .env — run scripts/bootstrap_env.sh or set it manually; refusing to fall back to a default admin password}"
+        airflow db migrate &&
+        airflow users create \
+          --username admin \
+          --firstname admin \
+          --lastname admin \
+          --role Admin \
+          --email admin@example.com \
+          --password "${AIRFLOW_ADMIN_PASSWORD}" &&
+        airflow pools set duckdb_pool 1 "DuckDB single-writer concurrency pool"
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: airflow scheduler
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: airflow webserver
+    restart: always
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  postgres_data:

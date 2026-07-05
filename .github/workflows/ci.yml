@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Least-privilege default; individual jobs only read the checked-out code.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  lint:
+    name: Lint (ruff + sqlfluff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: pip install --require-hashes -r requirements-dev.txt
+      - name: dbt deps (required for sqlfluff's dbt templater)
+        run: cd dbt_project && dbt deps
+      - name: ruff
+        run: ruff check scripts/ airflow/dags/
+      - name: sqlfluff
+        run: sqlfluff lint dbt_project/models/ dbt_project/snapshots/ --dialect duckdb
+
+  build-and-test:
+    name: dbt build + pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: pip install --require-hashes -r requirements-dev.txt
+      - name: Generate synthetic CI sample (avoids needing the 95MB source CSV)
+        run: python scripts/ci_setup.py
+      - name: Ingest synthetic sample
+        env:
+          RAW_CSV_PATH: data/sample_ci.csv
+          INGEST_MIN_ROWS: "1000"
+        run: python scripts/ingest_raw.py
+      - name: dbt deps
+        run: cd dbt_project && dbt deps
+      - name: dbt build
+        run: cd dbt_project && dbt build --profiles-dir .
+      - name: pytest
+        run: pytest tests/ -v --tb=short
+
+  security:
+    name: Security (pip-audit + detect-secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: pip install --require-hashes -r requirements-dev.txt
+      - name: pip-audit (dev/CI dependency set)
+        run: pip-audit -r requirements-dev.txt
+      - name: detect-secrets
+        run: |
+          detect-secrets-hook --baseline .secrets.baseline $(find . \
+            \( -path ./dbt_project/dbt_packages -o -path ./dbt_project/target \
+               -o -path ./dbt_project/logs -o -path ./airflow/logs -o -path ./.git \
+               -o -name .venv -o -name venv -o -name __pycache__ -o -name node_modules \
+               -o -name '*.duckdb' -o -name '*.csv' \) -prune -o -type f -print)

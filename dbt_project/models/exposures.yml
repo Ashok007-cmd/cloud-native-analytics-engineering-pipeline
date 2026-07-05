@@ -1,0 +1,42 @@
+version: 2
+
+exposures:
+  - name: customer_360_dashboard
+    type: dashboard
+    maturity: low
+    url: https://github.com/ak/cloud-native-analytics-pipeline
+    description: >
+      Customer-level dashboard showing segments, order history, and returns
+    owner:
+      name: Analytics Team
+      email: analytics@example.com
+    depends_on:
+      - ref('dim_customers')
+      - ref('fct_orders')
+
+  - name: product_performance_report
+    type: dashboard
+    maturity: low
+    url: https://github.com/ak/cloud-native-analytics-pipeline
+    description: >
+      Product-level sales trends, price analysis, and return rates
+    owner:
+      name: Analytics Team
+      email: analytics@example.com
+    depends_on:
+      - ref('dim_products')
+      - ref('fct_orders')
+      - ref('int_product_metrics')
+
+  - name: revenue_overview
+    type: dashboard
+    maturity: low
+    url: https://github.com/ak/cloud-native-analytics-pipeline
+    description: >
+      Daily revenue trends, monthly aggregates, and YoY comparisons
+    owner:
+      name: Analytics Team
+      email: analytics@example.com
+    depends_on:
+      - ref('fct_orders')
+      - ref('dim_dates')

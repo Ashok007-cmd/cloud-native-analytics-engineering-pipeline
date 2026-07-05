@@ -1,0 +1,45 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    loader: csv
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+    loaded_at_field: _ingested_at
+    quoting:
+      database: true
+      schema: true
+      identifier: true
+    tables:
+      - name: online_retail
+        description: "Raw Online Retail II transactions from UCI dataset"
+        columns:
+          - name: invoice_no
+            data_type: varchar
+            description: "Invoice number (6-digit integer assigned per transaction)"
+          - name: stock_code
+            data_type: varchar
+            description: "Product/item code (5-digit integer)"
+          - name: description
+            data_type: varchar
+            description: "Product/item name"
+          - name: quantity
+            data_type: integer
+            description: "Quantity of each item per transaction"
+          - name: invoice_date
+            data_type: timestamp
+            description: "Invoice date and time"
+          - name: unit_price
+            data_type: numeric
+            description: "Unit price in sterling"
+          - name: customer_id
+            data_type: varchar
+            description: "Customer number (5-digit integer)"
+          - name: country
+            data_type: varchar
+            description: "Country where customer resides"
+          - name: _ingested_at
+            data_type: timestamp
+            description: "Timestamp when this row was loaded into the raw layer"

@@ -1,0 +1,587 @@
+version: 2
+
+models:
+  - name: stg_online_retail
+    description: >
+      Cleansed online retail transactions. Invalid records (null/missing invoice/stock
+      codes, zero/negative prices) are removed. Null customer IDs are coalesced to
+      '__missing'. Negative quantities represent returns/cancellations. Columns are
+      renamed to snake_case and datatypes are cast appropriately.
+    columns:
+      - name: order_item_id
+        description: "Unique surrogate key per order line (invoice + stock_code + invoice_date + customer_id)"
+        tests:
+          - unique
+          - not_null
+      - name: invoice_no
+        description: "Invoice number (6-digit integer assigned per transaction)"
+        tests:
+          - not_null
+      - name: stock_code
+        description: "Product/item code"
+        tests:
+          - not_null
+      - name: description
+        description: "Product/item name"
+        tests:
+          - not_null
+      - name: quantity
+        description: "Quantity of each item per transaction (negative values indicate returns/cancellations)"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "!= 0"
+      - name: is_return
+        description: "True for return/cancellation transactions (quantity < 0)"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+      - name: invoice_date
+        description: "Invoice date and time"
+        tests:
+          - not_null
+          - not_in_future
+      - name: invoice_date_only
+        description: "Invoice date as DATE (truncated from timestamp for join performance)"
+        tests:
+          - not_null
+      - name: unit_price
+        description: "Unit price in sterling (positive values only)"
+        tests:
+          - not_null
+          - positive_value
+      - name: customer_id
+        description: "Customer identifier"
+        tests:
+          - not_null
+      - name: country
+        description: "Country where customer resides"
+        tests:
+          - not_null
+
+  - name: int_customer_metrics
+    description: >
+      Aggregated customer-level metrics including order frequency, revenue, recency,
+      and customer segmentation (high/medium/low value).
+    columns:
+      - name: customer_id
+        description: "Customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: total_orders
+        description: "Total number of distinct orders placed by the customer"
+        tests:
+          - not_null
+      - name: total_items
+        description: "Total number of line items across all orders"
+        tests:
+          - not_null
+      - name: total_quantity
+        description: "Sum of all item quantities (returns reduce the total)"
+        tests:
+          - not_null
+      - name: total_revenue
+        description: "Net revenue (orders minus returns)"
+        tests:
+          - not_null
+      - name: gross_revenue
+        description: "Revenue from forward orders only (excludes returns)"
+        tests:
+          - not_null
+      - name: return_count
+        description: "Number of return line items"
+        tests:
+          - not_null
+      - name: first_order_date
+        description: "Date of the customer's first order"
+        tests:
+          - not_null
+      - name: last_order_date
+        description: "Date of the customer's most recent order"
+        tests:
+          - not_null
+      - name: recency_days
+        description: "Days since the customer's last order"
+        tests:
+          - not_null
+      - name: customer_segment
+        description: "Customer value segment (high_value, medium_value, low_value, unknown)"
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["high_value", "medium_value", "low_value", "unknown"]
+
+  - name: int_product_metrics
+    description: >
+      Aggregated product-level metrics including order count, total quantity sold,
+      revenue, unique customers, and price statistics.
+    columns:
+      - name: product_key
+        description: "Unique surrogate key for the product"
+        tests:
+          - unique
+          - not_null
+      - name: stock_code
+        description: "Product item code"
+        tests:
+          - unique
+          - not_null
+      - name: description
+        description: "Product/item name"
+        tests:
+          - not_null
+      - name: order_count
+        description: "Number of distinct orders containing this product"
+        tests:
+          - not_null
+          - positive_value
+      - name: total_quantity_sold
+        description: "Total quantity sold across all orders"
+        tests:
+          - not_null
+      - name: total_revenue
+        description: "Net revenue (orders minus returns)"
+        tests:
+          - not_null
+      - name: gross_revenue
+        description: "Revenue from forward orders only (excludes returns)"
+        tests:
+          - not_null
+      - name: return_count
+        description: "Number of return line items for this product"
+        tests:
+          - not_null
+      - name: unique_customers
+        description: "Number of distinct customers who purchased this product"
+        tests:
+          - not_null
+      - name: min_price
+        description: "Minimum unit price at which this product was sold"
+        tests:
+          - not_null
+          - positive_value
+      - name: max_price
+        description: "Maximum unit price at which this product was sold"
+        tests:
+          - not_null
+          - positive_value
+      - name: avg_price
+        description: "Average unit price"
+        tests:
+          - not_null
+          - positive_value
+
+  - name: int_orders
+    description: >
+      Invoice-grain order aggregation. One row per (invoice_no, customer_id),
+      used for average order value, order frequency, and basket-size analysis.
+    columns:
+      - name: order_key
+        description: "Surrogate key for the order (hash of invoice_no + customer_id, matching this model's grain)"
+        tests:
+          - unique
+          - not_null
+      - name: invoice_no
+        description: "Natural key: invoice number"
+        tests:
+          - not_null
+      - name: customer_id
+        description: "Natural key: customer identifier"
+        tests:
+          - not_null
+      - name: order_date
+        description: "Timestamp of the earliest line item on this invoice"
+        tests:
+          - not_null
+      - name: line_item_count
+        description: "Number of line items on this invoice"
+        tests:
+          - not_null
+          - positive_value
+      - name: unique_items
+        description: "Number of distinct products on this invoice"
+        tests:
+          - not_null
+          - positive_value
+      - name: total_quantity
+        description: "Sum of quantity across all line items (negative for return-only invoices)"
+        tests:
+          - not_null
+      - name: forward_item_count
+        description: "Count of non-return line items on this invoice"
+        tests:
+          - not_null
+      - name: total_order_value
+        description: "Net order value (forward sales minus returns)"
+        tests:
+          - not_null
+      - name: forward_order_value
+        description: "Order value from forward (non-return) line items only"
+        tests:
+          - not_null
+      - name: has_returns
+        description: "True if any line item on this invoice is a return"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+
+  - name: dim_customers
+    description: >
+      Current-state customer dimension. One row per customer, wrapping
+      dim_customers_snapshot (SCD Type 2) with dbt_valid_to IS NULL filter.
+      Intended for BI tools that do not need SCD2 history.
+    columns:
+      - name: customer_key
+        description: "Surrogate key for the customer"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Natural key: customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: customer_segment
+        description: "RFM segment: high_value, medium_value, low_value, unknown"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["high_value", "medium_value", "low_value", "unknown"]
+      - name: total_orders
+        tests: [not_null]
+      - name: total_revenue
+        tests: [not_null]
+      - name: gross_revenue
+        tests: [not_null]
+
+  - name: dim_products
+    description: >
+      Current-state product dimension. One row per product, wrapping
+      dim_products_snapshot (SCD Type 2) with dbt_valid_to IS NULL filter.
+      Intended for BI tools that do not need SCD2 history.
+    columns:
+      - name: product_key
+        description: "Surrogate key for the product"
+        tests:
+          - unique
+          - not_null
+      - name: stock_code
+        description: "Natural key: product item code"
+        tests:
+          - unique
+          - not_null
+      - name: description
+        tests: [not_null]
+      - name: order_count
+        tests:
+          - not_null
+          - positive_value
+      - name: avg_price
+        tests:
+          - not_null
+          - positive_value
+
+  - name: dim_dates
+    description: >
+      Date dimension table covering the full date range of transaction data
+      with a 7-day buffer on each end. Contains calendar attributes for
+      date-based analysis and reporting.
+    columns:
+      - name: date_key
+        description: "Surrogate key in YYYYMMDD integer format"
+        tests:
+          - unique
+          - not_null
+          # NOTE: this is a coverage check, not a referential-integrity check — it is
+          # backwards from the normal FK direction (that check lives on
+          # fct_orders.date_key -> dim_dates and always passes). This one asserts
+          # every calendar day in the dim_dates spine has >=1 order, which is
+          # expected to warn permanently for any real retail dataset (weekends/
+          # holidays have no sales) — currently ~148 warns on this dataset. Kept at
+          # severity: warn as a non-blocking, informational signal only; do not
+          # treat a nonzero count here as a bug.
+          - relationships:
+              arguments:
+                to: ref('fct_orders')
+                field: date_key
+              config:
+                severity: warn
+      - name: full_date
+        description: "Calendar date"
+        tests:
+          - unique
+          - not_null
+      - name: year
+        description: "Year number"
+        tests:
+          - not_null
+      - name: month
+        description: "Month number (1-12)"
+        tests:
+          - not_null
+      - name: day
+        description: "Day of month (1-31)"
+        tests:
+          - not_null
+      - name: quarter
+        description: "Quarter number (1-4)"
+        tests:
+          - not_null
+      - name: day_of_year
+        description: "Day of year (1-366)"
+        tests:
+          - not_null
+      - name: week_of_year
+        description: "ISO week number (1-53)"
+        tests:
+          - not_null
+      - name: day_name
+        description: "Full weekday name (Monday-Sunday)"
+        tests:
+          - not_null
+      - name: month_name
+        description: "Full month name (January-December)"
+        tests:
+          - not_null
+      - name: is_weekend
+        description: "True for Saturday-Sunday, False for Monday-Friday"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+      - name: is_weekday
+        description: "True for Monday-Friday, False for Saturday-Sunday"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+
+  - name: fct_orders
+    description: >
+      Fact table containing one row per order line item. References all dimension
+      tables via surrogate keys and includes measures (quantity, unit_price, revenue).
+    columns:
+      - name: order_item_id
+        description: "Unique identifier for each order line item"
+        tests:
+          - unique
+          - not_null
+      - name: customer_key
+        description: >
+          Foreign key to dim_customers_snapshot, resolved via point-in-time SCD2 join
+          on invoice_date. Falls back to '-1' when no dimension version covers the
+          order's timestamp (e.g. a new customer not yet captured by a snapshot run).
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers_snapshot')
+                field: customer_key
+              config:
+                severity: warn   # matches the '-1' unknown-dimension fallback pattern
+      - name: product_key
+        description: >
+          Foreign key to dim_products_snapshot, resolved via point-in-time SCD2 join
+          on invoice_date. Falls back to '-1' when no dimension version covers the
+          order's timestamp (e.g. a new product not yet captured by a snapshot run).
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products_snapshot')
+                field: product_key
+              config:
+                severity: warn   # matches the '-1' unknown-dimension fallback pattern
+      - name: date_key
+        description: "Foreign key to dim_dates"
+        tests:
+          - not_null:
+              config:
+                severity: warn
+          - relationships:
+              arguments:
+                to: ref('dim_dates')
+                field: date_key
+              config:
+                severity: warn
+      - name: invoice_date
+        description: "Date and time of the order"
+        tests:
+          - not_null
+          - not_in_future
+      - name: invoice_no
+        description: "Invoice number"
+        tests:
+          - not_null
+      - name: is_return
+        description: "True for return/cancellation transactions (quantity < 0), False for normal orders"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+      - name: quantity
+        description: "Quantity of items ordered (negative values indicate returns)"
+        tests:
+          - not_null
+      - name: unit_price
+        description: "Unit price at time of order"
+        tests:
+          - not_null
+          - positive_value
+      - name: revenue
+        description: "Calculated as quantity * unit_price (negative for returns)"
+        tests:
+          - not_null
+      - name: country
+        description: "Customer country from the invoice record"
+        tests:
+          - not_null
+
+snapshots:
+  - name: dim_customers_snapshot
+    description: >
+      Customer dimension table (SCD Type 2 snapshot). Contains one row per customer
+      per historical state. Use WHERE dbt_valid_to IS NULL to get current records.
+    columns:
+      - name: customer_key
+        description: "Unique surrogate key for the customer (unique per current record: dbt_valid_to IS NULL)"
+        tests:
+          - unique:
+              config:
+                where: "dbt_valid_to IS NULL"
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_orders')
+                field: customer_key
+              config:
+                severity: warn
+      - name: customer_id
+        description: "Natural key: customer identifier from source system (unique per current record)"
+        tests:
+          - unique:
+              config:
+                where: "dbt_valid_to IS NULL"
+          - not_null
+      - name: total_orders
+        description: "Total number of distinct orders placed by the customer"
+        tests:
+          - not_null
+      - name: total_items
+        description: "Total number of line items across all orders"
+        tests:
+          - not_null
+      - name: total_quantity
+        description: "Sum of all item quantities (returns reduce the total)"
+        tests:
+          - not_null
+      - name: total_revenue
+        description: "Net revenue (orders minus returns)"
+        tests:
+          - not_null
+      - name: gross_revenue
+        description: "Revenue from forward orders only (excludes returns)"
+        tests:
+          - not_null
+      - name: return_count
+        description: "Number of return line items by this customer"
+        tests:
+          - not_null
+      - name: first_order_date
+        description: "Date of the customer's first order"
+        tests:
+          - not_null
+      - name: last_order_date
+        description: "Date of the customer's most recent order"
+        tests:
+          - not_null
+      - name: recency_days
+        description: "Days since the customer's last order"
+        tests:
+          - not_null
+      - name: customer_segment
+        description: "Customer value segment (high_value, medium_value, low_value, unknown)"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["high_value", "medium_value", "low_value", "unknown"]
+
+  - name: dim_products_snapshot
+    description: >
+      Product dimension table (SCD Type 2 snapshot). Contains one row per product
+      per historical state. Use WHERE dbt_valid_to IS NULL to get current records.
+    columns:
+      - name: product_key
+        description: "Unique surrogate key for the product (unique per current record: dbt_valid_to IS NULL)"
+        tests:
+          - unique:
+              config:
+                where: "dbt_valid_to IS NULL"
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_orders')
+                field: product_key
+              config:
+                severity: warn
+      - name: stock_code
+        description: "Natural key: product item code (unique per current record)"
+        tests:
+          - unique:
+              config:
+                where: "dbt_valid_to IS NULL"
+          - not_null
+      - name: description
+        description: "Product/item name"
+        tests:
+          - not_null
+      - name: order_count
+        description: "Number of distinct orders containing this product"
+        tests:
+          - not_null
+      - name: total_quantity_sold
+        description: "Total quantity sold across all orders"
+        tests:
+          - not_null
+      - name: total_revenue
+        description: "Net revenue (orders minus returns)"
+        tests:
+          - not_null
+      - name: gross_revenue
+        description: "Revenue from forward orders only (excludes returns)"
+        tests:
+          - not_null
+      - name: return_count
+        description: "Number of return line items for this product"
+        tests:
+          - not_null
+      - name: unique_customers
+        description: "Number of distinct customers who purchased this product"
+        tests:
+          - not_null
+      - name: min_price
+        description: "Minimum unit price at which this product was sold"
+        tests:
+          - not_null
+          - positive_value
+      - name: max_price
+        description: "Maximum unit price at which this product was sold"
+        tests:
+          - not_null
+          - positive_value
+      - name: avg_price
+        description: "Average unit price"
+        tests:
+          - not_null
+          - positive_value

@@ -1,0 +1,88 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+    "dbt_project/dbt_packages",
+    "dbt_project/target",
+    "dbt_project/logs",
+]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",       # pycodestyle / pyflakes
+    "I",                  # isort
+    "N",                  # pep8-naming
+    "UP",                 # pyupgrade
+    "B",                  # flake8-bugbear
+    "SIM",                # flake8-simplify
+    "S",                  # flake8-bandit (security)
+    "C90",                # mccabe (complexity)
+    "RET",                # flake8-return
+    "PERF",               # perflint
+    "RUF",                # ruff-specific
+    "FBT",                # flake8-boolean-trap
+    "PT",                 # flake8-pytest-style
+    "G",                  # flake8-logging-format
+    "TCH",                # flake8-type-checking
+]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "S603",   # subprocess call — not applicable here
+    "S607",   # partial executable path — intentional in scripts
+    "PT007",  # param lists — allow mixed positional/keyword in parametrize
+    "FBT001", # boolean- positional arg — allow in private helpers
+    "FBT002", # boolean-default — allow in private helpers
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/ci_setup.py" = ["B", "S311"]  # S311: random not used for security
+"tests/*" = ["S101", "TCH"]            # S101: assert in tests; TCH: test imports
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --strict-markers --cov=scripts --cov=airflow --cov-report=term-missing"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests requiring external services (deselect with '-m \"not integration\"')",
+    "smoke: quick smoke tests for fast CI feedback",
+]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(levelname)s %(name)s: %(message)s"
+
+[tool.coverage.run]
+source = ["scripts", "airflow"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
+skip_covered = true
+fail_under = 0
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_return_any = true
+strict_optional = true
+ignore_missing_imports = true
+disallow_untyped_defs = false
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
+module = ["tests/*"]
+disallow_untyped_defs = false
+warn_return_any = false
