@@ -182,7 +182,7 @@ apache-airflow==2.11.2 \
     --hash=sha256:0d29f1ab2d68c26e3f0f67828740b5bd1bd3cdce43a62778fbb242b2d9030abb \
     --hash=sha256:8866183faba86fa11fc40eac9eebad57d84ab17614cdb14165e8a8f7feb05aae
     # via
-    #   -r requirements.in
+    #   -r airflow/requirements.in
     #   apache-airflow-providers-common-compat
     #   apache-airflow-providers-common-io
     #   apache-airflow-providers-common-sql
@@ -193,9 +193,9 @@ apache-airflow==2.11.2 \
     #   apache-airflow-providers-smtp
     #   apache-airflow-providers-sqlite
     #   astronomer-cosmos
-apache-airflow-providers-common-compat==1.9.0 \
-    --hash=sha256:6fc5463e804a742f0e21441e9c2c2441d280af7b8e68094759f7f65b398319b3 \
-    --hash=sha256:805e86ea89b1d14ee5d7035e1baeed5d15dbb183d66b230d8b024f20208d029b
+apache-airflow-providers-common-compat==1.15.0 \
+    --hash=sha256:1d3e05cddc66615307683309e2443c8c92de74817c1e08d6b26d278b8c20eb00 \
+    --hash=sha256:86cbc6363baef2cd02962af0877cec71cc99ff7c298cb2d19cac0b788c40e1d2
     # via
     #   apache-airflow
     #   apache-airflow-providers-common-sql
@@ -222,9 +222,9 @@ apache-airflow-providers-ftp==3.13.3 \
     --hash=sha256:c6da470a73f2e20ded4499f8877dd7c013273ec861f04d67723046cbc1d59dee \
     --hash=sha256:e4a0746bb71b07b75434ab015ad0f63c9d54f03d35c7c25c80769af9038b41e2
     # via apache-airflow
-apache-airflow-providers-http==5.5.0 \
-    --hash=sha256:2267871cd3a44f4c9f306dc59c07ebd9a7fcd0d722d5a570c1401b08dfe6c73c \
-    --hash=sha256:2be7e5cc8b12df5824ab150cab1b4fa871ffa6f8a11eafbc4f941b36446f1d32
+apache-airflow-providers-http==6.0.0 \
+    --hash=sha256:cae4369e2265432feaf7507eaa2bf4fca542817c33516215243fee0ab45dd3f0 \
+    --hash=sha256:f620eb385641c0ce977a63f911ebc8a636237955040044f3ebc9af955e464bb2
     # via apache-airflow
 apache-airflow-providers-imap==3.9.4 \
     --hash=sha256:d33f6a460a409ffd6d22825a556e471abdc7ecca2c6e08aa4964671286b27313 \
@@ -238,7 +238,7 @@ apache-airflow-providers-sqlite==4.1.3 \
     --hash=sha256:006dadd9c69d941b099a1a16fae723db48528401ad756fd50e956463257e66f0 \
     --hash=sha256:f5baff823eec558e85ad91cfbab9fb48ac08cd60b08caca4132b28010bd46fe9
     # via apache-airflow
-apispec==6.10.0 \
+apispec[yaml]==6.10.0 \
     --hash=sha256:0a888555cd4aa5fb7176041be15684154fd8961055e1672e703abf737e8761bf \
     --hash=sha256:8ff23e0de9a0ceb62ff70047241126315bd17b8d0565a567934c0156f4ddbb43
     # via flask-appbuilder
@@ -260,7 +260,7 @@ asn1crypto==1.5.1 \
 astronomer-cosmos==1.5.1 \
     --hash=sha256:3aa1d92624ecbcc9ab82ba1bcf1fca272532792e428d6201ace894680d93857e \
     --hash=sha256:5438607ece0f31c69e8181a34e5adf028e4663d928b30f15100531ebeb1e00b8
-    # via -r requirements.in
+    # via -r airflow/requirements.in
 attrs==26.1.0 \
     --hash=sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309 \
     --hash=sha256:d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32
@@ -276,10 +276,6 @@ babel==2.18.0 \
     # via
     #   agate
     #   flask-babel
-backports-tarfile==1.2.0 \
-    --hash=sha256:77e284d754527b01fb1e6fa8a1afe577858ebe4e9dad8919e34c862cb399bc34 \
-    --hash=sha256:d75e02c268746e1b8144c278978b6e98e85de6ad16f8e4b0844a154557eca991
-    # via jaraco-context
 blinker==1.9.0 \
     --hash=sha256:b4ce2265a7abece45e7cc896e98dbebe6cead56bcf805a3d23136d145f5445bf \
     --hash=sha256:ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc
@@ -650,7 +646,7 @@ dbt-core==1.11.12 \
 dbt-duckdb==1.10.1 \
     --hash=sha256:5d6df1589d4ba21fe20ac08454a32763d3263798c9f5914280eabd1dc285cbc0 \
     --hash=sha256:90658ecb367082786c5ea2ffbf9e35bb4116fa5ad1bc2f287c4dc1f3984bafa1
-    # via -r requirements.in
+    # via -r airflow/requirements.in
 dbt-extractor==0.6.0 \
     --hash=sha256:05bcfab7ebd70296ceb31742e8333ba66a2c939de44e61a7088bebafa939aaf6 \
     --hash=sha256:080fd1edf123926ed97929c65a75874d0fea687ccd5d3ebbc9e81b339f099604 \
@@ -683,7 +679,7 @@ dbt-semantic-interfaces==0.9.0 \
 dbt-snowflake==1.11.6 \
     --hash=sha256:88af2d2f6991a176316ffac1ec8ffbd70c5aeac2813e81037d72abd9b642e4ce \
     --hash=sha256:e975b53eb94528648cc88d8046518529d4c5bd7f488783d90b99342cf3dca549
-    # via -r requirements.in
+    # via -r airflow/requirements.in
 deepdiff==8.6.2 \
     --hash=sha256:186dcbd181e4d76cef11ab05f802d0056c5d6083c5a6748c1473e9d7481e183e \
     --hash=sha256:4d22034a866c3928303a9332c279362f714192d9305bac17c498720d095fd1b4
@@ -743,7 +739,7 @@ duckdb==1.5.4 \
     --hash=sha256:f9e32f1cdd106793d79d190186bed9e75289d51e68bd9174e47c04bffedeab6f \
     --hash=sha256:ff96d2a342b200e1ec6f1f19986c77f4ac16a49b6112f71c5b763989203a9d60
     # via
-    #   -r requirements.in
+    #   -r airflow/requirements.in
     #   dbt-duckdb
 email-validator==2.3.0 \
     --hash=sha256:80f13f623413e6b197ae73bb10bf4eb0908faf509ad8362c5edeb0be7fd450b4 \
@@ -1182,10 +1178,7 @@ idna==3.18 \
 importlib-metadata==8.9.0 \
     --hash=sha256:58850626cef4bd2df100378b0f2aea9724a7b92f10770d547725b047078f99ee \
     --hash=sha256:e0f761b6ea91ced3b0844c14c9d955224d538105921f8e6754c00f6ca79fba7f
-    # via
-    #   apache-airflow
-    #   dbt-semantic-interfaces
-    #   keyring
+    # via dbt-semantic-interfaces
 inflection==0.5.1 \
     --hash=sha256:1a29730d366e996aaacffb2f1f1cb9593dc38e2ddd30c91250c6dde09ea9b417 \
     --hash=sha256:f38b2b640938a4f35ade69ac3d053042959b62a0f1076a5bbaa1b9526605a8a2
@@ -1447,7 +1440,7 @@ marshmallow-sqlalchemy==0.28.2 \
     --hash=sha256:2ab0f1280c793e5aec81deab3e63ec23688ddfe05e5f38ac960368a1079520a1 \
     --hash=sha256:c31b3bdf794de1d78c53e1c495502cbb3eeb06ed216869980c71d6159e7e9e66
     # via flask-appbuilder
-mashumaro==3.14 \
+mashumaro[msgpack]==3.14 \
     --hash=sha256:5ef6f2b963892cbe9a4ceb3441dfbea37f8c3412523f25d42e9b3a7186555f1d \
     --hash=sha256:c12a649599a8f7b1a0b35d18f12e678423c3066189f7bc7bd8dd431c5c8132c3
     # via
@@ -2146,7 +2139,7 @@ psycopg2-binary==2.9.12 \
     --hash=sha256:f921f3cd87035ef7df233383011d7a53ea1d346224752c1385f1edfd790ceb6a \
     --hash=sha256:fb1828cf3da68f99e45ebce1355d65d2d12b6a78fb5dfb16247aad6bdef5f5d2 \
     --hash=sha256:ffdd7dc5463ccd61845ac37b7012d0f35a1548df9febe14f8dd549be4a0bc81e
-    # via -r requirements.in
+    # via -r airflow/requirements.in
 pycparser==3.0 \
     --hash=sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29 \
     --hash=sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992
@@ -2698,7 +2691,7 @@ six==1.17.0 \
     #   python-dateutil
     #   rfc3339-validator
     #   wirerope
-snowflake-connector-python==4.6.0 \
+snowflake-connector-python[secure-local-storage]==4.6.0 \
     --hash=sha256:00abbcfe958f60da18297191f3499b1e61802e64622521a2e8da1c059c14e1c0 \
     --hash=sha256:03b0a232d8d0a1c78eb0d4e9f8a422a1553b2f69ef1387d50a3223bb1829a249 \
     --hash=sha256:04ea8906ac06bdf98ab265f7870b532f32dd2b0f6b3b06a542b6e25a43e01665 \
@@ -2825,10 +2818,7 @@ typing-extensions==4.16.0 \
     --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8 \
     --hash=sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5
     # via
-    #   aiohttp
-    #   aiosignal
     #   alembic
-    #   anyio
     #   cron-descriptor
     #   dbt-adapters
     #   dbt-common
@@ -2844,8 +2834,6 @@ typing-extensions==4.16.0 \
     #   opentelemetry-semantic-conventions
     #   pydantic
     #   pydantic-core
-    #   pyopenssl
-    #   referencing
     #   snowflake-connector-python
     #   snowplow-tracker
     #   typing-inspection
